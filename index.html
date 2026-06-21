@@ -6,7 +6,7 @@
 <title>Ko-WideSearch: A Korean Breadth-Search Benchmark for Web Agents</title>
 <meta name="description" content="Ko-WideSearch — a Korean breadth-search benchmark that asks web agents to exhaustively enumerate a closed set and fill every attribute cell. 228 tables, 12 web agents.">
 <meta property="og:title" content="Ko-WideSearch: A Korean Breadth-Search Benchmark for Web Agents">
-<meta property="og:description" content="Agents recover the set but not the rows. Best Item-F1 92.8 vs best Row-F1 53.7 — and neither more search nor more spend closes the gap.">
+<meta property="og:description" content="Agents recover the set but not the rows: best Item-F1 92.8 vs best Row-F1 53.7. Diagnostics show the bottleneck is finding/normalizing each cell — not the set, not formatting — and neither more search nor more spend closes the gap.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -94,6 +94,7 @@
 
   /* stat strip */
   .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; background:var(--surface); box-shadow:var(--shadow)}
+  .stats.k3{grid-template-columns:repeat(3,1fr)}
   .stat{padding:24px 18px; text-align:center; border-right:1px solid var(--line)}
   .stat:last-child{border-right:none}
   .stat .v{font-family:'Source Serif 4',serif; font-size:30px; font-weight:700}
@@ -136,7 +137,7 @@
 
   @media(max-width:780px){
     .grid.k3,.grid.k2{grid-template-columns:1fr}
-    .stats{grid-template-columns:repeat(2,1fr)}
+    .stats,.stats.k3{grid-template-columns:repeat(2,1fr)}
     .stat:nth-child(2){border-right:none}
     .stat:nth-child(1),.stat:nth-child(2){border-bottom:1px solid var(--line)}
   }
@@ -214,6 +215,23 @@
         each winner's age looked up off the results page (cross-source).
       </figcaption>
     </figure>
+
+    <figure class="fig" style="margin-top:24px">
+      <img src="figures/composition.png" alt="Left: the three difficulty tiers placed in a width × 2-D-share plane. Right: the cross-source share of each tier.">
+      <figcaption>
+        <b>Two structural knobs define the tiers, and a sourcing axis cuts across them.</b> <b>(a)</b> Each tier
+        occupies a region of the <i>width × 2-D-share</i> plane — Easy uses neither knob, Medium exactly one, Hard
+        both. <b>(b)</b> A second, orthogonal axis is <i>where</i> the attributes live: <b>201 of 228 tables (88%)
+        are cross-source</b>, requiring the agent to leave the membership page to fill a cell — an axis WideSearch
+        leaves implicit.
+      </figcaption>
+    </figure>
+
+    <div class="stats k3" style="margin-top:24px">
+      <div class="stat"><div class="v">3</div><div class="l">columns (Easy) → <b>7</b> (Hard), median</div></div>
+      <div class="stat"><div class="v">0% → 100%</div><div class="l">2-D composite-key share, Easy → Hard</div></div>
+      <div class="stat"><div class="v">0</div><div class="l">overlap vs 5,744 Qs from 8 benchmarks</div></div>
+    </div>
   </div>
 </section>
 
@@ -221,7 +239,7 @@
 <section id="findings">
   <div class="wrap">
     <p class="eyebrow">What we found</p>
-    <h2>Five findings that hold across twelve agents</h2>
+    <h2>Six findings that hold across twelve agents</h2>
     <div class="grid k3" style="margin-top:8px">
       <div class="card">
         <div class="num">92.8<span style="font-size:18px; color:var(--faint)"> → </span>53.7</div>
@@ -310,27 +328,91 @@
 <!-- ANALYSIS -->
 <section id="analysis">
   <div class="wrap">
-    <p class="eyebrow">Why it's hard</p>
+    <p class="eyebrow">Why it's hard — the diagnostics</p>
     <h2>Knobs degrade accuracy; effort doesn't recover it</h2>
-    <div class="grid k2" style="margin-top:8px">
+    <p class="lead muted" style="margin-bottom:26px">
+      We probe the Item-vs-Row gap from four angles — which cell types fail, whether big sets are harder, whether
+      more search helps, and what the surviving errors actually are. Every chart points the same way:
+      <b style="color:var(--ink)">the bottleneck is finding and normalizing each value, not finding the set or
+      formatting the table.</b>
+    </p>
+
+    <!-- where does the gap come from -->
+    <figure class="fig">
+      <img src="figures/analysis.png" alt="Three panels: (a) Column-F1 by cell type, (b) Row-F1 by gold set size, (c) Row-F1 versus average tool calls per task.">
+      <figcaption>
+        <b>(a) Which cell types fail first.</b> Declared <b>dates (58)</b> and <b>names (56)</b> come out right;
+        <b>enum (51)</b> and <b>free-text (49)</b> fail most — the hard cells are the ones that must be found and
+        normalized, not the ones with a fixed format. <b>(b) Big sets are not the problem.</b> Pooled Row-F1 is
+        essentially flat across set size (33.8 / 30.7 / 36.9) — the largest sets are often systematically-enumerable
+        sports seasons. <b>(c) More search ≠ better.</b> The two heaviest searchers (Qwen3.6 at ~66 calls/task,
+        Solar at ~57) sit near the bottom; GPT-5.5 and Opus-4.8 top the chart at moderate search.
+      </figcaption>
+    </figure>
+
+    <!-- tiers + cost -->
+    <div class="grid k2" style="margin-top:24px">
       <figure class="fig">
         <img src="figures/results_tiers.png" alt="Line plots showing every metric declining from Easy to Hard difficulty tiers and from exhaustive to cross-source sourcing.">
         <figcaption><b>Accuracy by difficulty tier and by sourcing.</b> Every metric slopes down as the structural
-        knobs harden (Easy → Hard) and as attributes move off the membership page (exhaustive → cross-source).</figcaption>
+        knobs harden (Easy → Hard: Row-F1 0.41 → 0.27 → 0.22) and as attributes move off the membership page
+        (exhaustive → cross-source). Parse failures rise from 19% (Easy) to ~25% (Medium/Hard).</figcaption>
       </figure>
       <figure class="fig">
         <img src="figures/cost_budget.png" alt="Left: accuracy versus cost-per-task scatter. Right: share of tasks using 30 or more search calls per model.">
         <figcaption><b>Accuracy vs. cost, and search saturation.</b> Frontier accuracy costs ~10× the best open
-        model; DeepSeek-V4-Pro is the Pareto value winner. The heaviest searchers (right) are <i>not</i> the top
-        scorers — more tool calls do not buy completeness.</figcaption>
+        model for +9 Row-F1; <b>DeepSeek-V4-Pro is the Pareto value winner</b> (Row 45.0 @ $0.23/task). Heaviest
+        searchers (right) are <i>not</i> the top scorers.</figcaption>
       </figure>
     </div>
-    <p class="lead muted" style="margin-top:24px">
-      Membership is <b style="color:var(--ink)">balanced</b> — agents neither systematically hallucinate members nor
-      systematically drop them (Item precision ≈ recall). The benchmark separates two skills that depth benchmarks
-      conflate: <b style="color:var(--ink)">finding everyone</b> (largely solved) and
+
+    <!-- balanced membership callout -->
+    <div class="tldr" style="margin-top:26px; border-left-color:var(--blue)">
+      <b style="color:var(--blue)">Membership is balanced; the loss is at the cell.</b> Across the instrumented
+      subset, Item precision ≈ recall (GPT-5.5 P85/R86, DeepSeek P71/R71, GPT-5.4-mini P82/R76) — agents neither
+      systematically hallucinate members nor systematically drop them. Row precision ≈ recall too, but both collapse
+      to ≈25–37. The benchmark cleanly separates two skills that depth benchmarks conflate:
+      <b style="color:var(--ink)">finding everyone</b> (largely solved) and
       <b style="color:var(--ink)">getting every cell right</b> (far from solved).
+    </div>
+
+    <!-- per-category + error taxonomy -->
+    <div class="grid k2" style="margin-top:26px; align-items:start">
+      <figure class="fig">
+        <img src="figures/percategory.png" alt="Horizontal bar chart of pooled Row-F1 across 16 categories, from Economy/Policy at 0.49 down to Art at 0.00.">
+        <figcaption><b>The gap is broad, not a single hard domain.</b> Pooled Row-F1 clusters at 0.28–0.49 across
+        the well-sampled categories; Sports (the largest, n=80) sits mid-pack at 0.31. Literature/Books is the
+        weakest well-sampled domain (0.13). Light bars are small-n (&lt;4 tasks) and high-variance.</figcaption>
+      </figure>
+      <figure class="fig">
+        <img src="figures/neq_residual.png" alt="Four-quadrant taxonomy of cells that the semantic judge still marks wrong: different entity, wrong region, wrong value, category mismatch.">
+        <figcaption><b>What survives the semantic judge.</b> After the normalization-aware comparator already
+        credits transliteration and granularity variants, the residual wrong cells are <i>substantively</i> wrong:
+        a different entity (n=269), the wrong region/district (n=328), a wrong value (n=164), or a category
+        mismatch (n=35) — not formatting noise.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- CASE STUDY -->
+<section id="case">
+  <div class="wrap">
+    <p class="eyebrow">A failure, cell by cell</p>
+    <h2>The set is right; the rows are empty</h2>
+    <p class="lead muted">
+      The headline gap is easiest to see in a single table. Below, DeepSeek-V4-Pro is asked for Korea's eight
+      metropolitan cities with each city's population and mayor. It <b style="color:var(--ink)">recovers all eight
+      cities</b> (Item-F1 100) — but leaves the population column blank for every row and gets the mayor wrong or
+      missing for six, so <b style="color:var(--ink)">not one row is fully correct</b> (Row-F1 0). High Item-F1 and
+      zero Row-F1 in the same task is the pattern, not the exception.
     </p>
+    <figure class="fig" style="margin-top:22px">
+      <img src="figures/case_deepseek.png" alt="Side-by-side gold and DeepSeek-V4-Pro prediction tables for the eight Korean metropolitan cities; the cities are all present but the population and most mayor cells are blank or wrong.">
+      <figcaption><b>DeepSeek-V4-Pro, kws-0140 (8 metropolitan cities).</b> Item-F1 100 · Column-F1 11 · Row-F1 0.
+      Every city is recovered; the attribute cells are blank or wrong. One verbatim example of the six-way failure
+      taxonomy documented in the paper's appendix (one real case per model).</figcaption>
+    </figure>
   </div>
 </section>
 

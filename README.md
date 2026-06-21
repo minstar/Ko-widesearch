@@ -26,6 +26,19 @@ item's attribute table. Graded by Item-, Column- and Row-F1.
   at or below the open-weight floor.
 - **Finding > formatting.** Free-text and enum cells fail most; dates and names come out right.
 
+## Analysis highlights
+
+- **Where the gap comes from.** Column-F1 by cell type: date **58**, name **56**, number **55**,
+  enum **51**, free-text **49** — the bottleneck is finding/normalizing values, not formatting.
+- **Membership is balanced.** Item precision ≈ recall (e.g. GPT-5.5 P85/R86) — agents neither
+  systematically hallucinate nor drop members; the loss is entirely at the cell level (Row P≈R≈25–37).
+- **Big sets aren't the problem.** Pooled Row-F1 is roughly flat across set size (33.8 / 30.7 / 36.9).
+- **The gap is broad.** Pooled Row-F1 clusters at 0.28–0.49 across well-sampled categories; Sports
+  (the largest, n=80) sits mid-pack at 0.31.
+- **Errors are substantive.** After a normalization-aware judge credits transliteration/granularity
+  variants, the residual wrong cells are wrong entities, wrong regions, wrong values — not formatting noise.
+- **Cost.** Per task, frontier ≈ $0.82–0.87 vs DeepSeek-V4-Pro $0.23 (the Pareto value winner, Row 45.0).
+
 ## Release
 
 The pipeline and scorer are open (MIT). The **gold evaluation data is gated** — shared on
