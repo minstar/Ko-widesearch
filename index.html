@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ko-WideSearch: A Korean Breadth-Search Benchmark for Web Agents</title>
+<meta name="description" content="Ko-WideSearch — a Korean breadth-search benchmark that asks web agents to exhaustively enumerate a closed set and fill every attribute cell. 228 tables, 12 web agents.">
+<meta property="og:title" content="Ko-WideSearch: A Korean Breadth-Search Benchmark for Web Agents">
+<meta property="og:description" content="Agents recover the set but not the rows. Best Item-F1 92.8 vs best Row-F1 53.7 — and neither more search nor more spend closes the gap.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbfbfa; --surface:#ffffff; --ink:#1a1a1c; --muted:#5b5f66; --faint:#8b9098;
+    --line:#e7e7e4; --accent:#c0392b; --accent-soft:#fdecea;
+    --blue:#2563a8; --green:#1f8a4c; --red:#c0392b;
+    --radius:14px; --maxw:1040px;
+    --shadow:0 1px 2px rgba(20,20,30,.04), 0 8px 28px rgba(20,20,30,.06);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px}
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    padding:72px 0 48px; text-align:center;
+    background:
+      radial-gradient(900px 300px at 50% -120px, rgba(192,57,43,.07), transparent 70%),
+      var(--bg);
+    border-bottom:1px solid var(--line);
+  }
+  .badge{
+    display:inline-block; font-size:12px; font-weight:600; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--accent); background:var(--accent-soft);
+    padding:5px 13px; border-radius:999px; margin-bottom:22px;
+  }
+  h1.title{
+    font-family:'Source Serif 4',serif; font-weight:700; font-size:clamp(30px,5vw,50px);
+    line-height:1.12; margin:0 auto 10px; max-width:18ch; letter-spacing:-.01em;
+  }
+  .subtitle{font-size:clamp(16px,2.3vw,20px); color:var(--muted); max-width:46ch; margin:0 auto 26px}
+  .authors{font-size:17px; font-weight:500; margin:0 0 4px}
+  .affil{font-size:14px; color:var(--faint); margin:0 0 30px}
+  .btns{display:flex; gap:12px; justify-content:center; flex-wrap:wrap}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; font-weight:600; font-size:15px;
+    padding:11px 20px; border-radius:999px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink); transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:hover{text-decoration:none; transform:translateY(-2px); box-shadow:var(--shadow)}
+  .btn.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .btn svg{width:17px; height:17px}
+
+  /* ---------- SECTIONS ---------- */
+  section{padding:60px 0; border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin:0 0 10px}
+  h2{font-family:'Source Serif 4',serif; font-weight:700; font-size:clamp(24px,3.4vw,33px); margin:0 0 18px; letter-spacing:-.01em}
+  h3{font-size:19px; font-weight:700; margin:0 0 8px}
+  p.lead{font-size:18px; color:var(--ink)}
+  p{color:var(--ink)}
+  .muted{color:var(--muted)}
+
+  /* TL;DR callout */
+  .tldr{
+    background:linear-gradient(180deg,#fff,#fcfcfb); border:1px solid var(--line);
+    border-left:4px solid var(--accent); border-radius:var(--radius);
+    padding:24px 28px; box-shadow:var(--shadow);
+    font-size:18px; line-height:1.65;
+  }
+  .tldr b{color:var(--accent)}
+
+  /* finding cards */
+  .grid{display:grid; gap:18px}
+  .grid.k3{grid-template-columns:repeat(3,1fr)}
+  .grid.k2{grid-template-columns:repeat(2,1fr)}
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:24px; box-shadow:var(--shadow); transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .card:hover{transform:translateY(-3px); box-shadow:0 8px 30px rgba(20,20,30,.09)}
+  .card .num{font-family:'Source Serif 4',serif; font-size:34px; font-weight:700; color:var(--accent); line-height:1; margin-bottom:6px}
+  .card h3{font-size:17px; margin-bottom:6px}
+  .card p{font-size:14.5px; color:var(--muted); margin:0}
+
+  /* stat strip */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; background:var(--surface); box-shadow:var(--shadow)}
+  .stat{padding:24px 18px; text-align:center; border-right:1px solid var(--line)}
+  .stat:last-child{border-right:none}
+  .stat .v{font-family:'Source Serif 4',serif; font-size:30px; font-weight:700}
+  .stat .l{font-size:13px; color:var(--muted); margin-top:3px}
+
+  /* figures */
+  figure{margin:0}
+  .fig{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow)}
+  .fig img{width:100%; height:auto; display:block; border-radius:6px}
+  figcaption{font-size:13.5px; color:var(--muted); margin-top:12px; line-height:1.55}
+  figcaption b{color:var(--ink)}
+
+  /* table */
+  .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); background:var(--surface)}
+  table{border-collapse:collapse; width:100%; font-size:14px; min-width:560px}
+  th,td{padding:11px 14px; text-align:right; border-bottom:1px solid var(--line); white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  thead th{font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:600; background:#fafafa}
+  tbody tr:hover{background:#fcfaf9}
+  td.model{font-weight:600}
+  .tag{display:inline-block; font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:5px; margin-left:7px; vertical-align:middle}
+  .tag.prop{background:#e8f0fa; color:var(--blue)}
+  .tag.open{background:#e6f5ec; color:var(--green)}
+  .tag.kr{background:#fdecea; color:var(--red)}
+  .best{font-weight:700; color:var(--accent)}
+
+  /* bibtex */
+  pre{
+    background:#1c1d21; color:#e6e6e6; border-radius:var(--radius); padding:20px 22px;
+    overflow-x:auto; font-family:'JetBrains Mono',monospace; font-size:13px; line-height:1.6; margin:0;
+  }
+  .pre-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px}
+  .copybtn{font-size:12px; font-weight:600; padding:6px 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface); cursor:pointer; color:var(--ink)}
+  .copybtn:hover{background:#f3f3f1}
+
+  footer{padding:44px 0 60px; text-align:center; color:var(--faint); font-size:13.5px}
+
+  .note{font-size:13.5px; color:var(--muted); background:#faf7f0; border:1px solid #efe7d6; border-radius:12px; padding:14px 18px; display:flex; gap:10px; align-items:flex-start}
+  .note svg{width:18px; height:18px; flex-shrink:0; margin-top:2px; color:#b88a00}
+
+  @media(max-width:780px){
+    .grid.k3,.grid.k2{grid-template-columns:1fr}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .stat:nth-child(2){border-right:none}
+    .stat:nth-child(1),.stat:nth-child(2){border-bottom:1px solid var(--line)}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">Korean Web-Agent Benchmark</span>
+    <h1 class="title">Ko-WideSearch</h1>
+    <p class="subtitle">A Korean breadth-search benchmark for exhaustive set enumeration by web agents.</p>
+    <p class="authors">Minbyul Jeong</p>
+    <p class="affil">Upstage AI · Search &amp; Agent</p>
+    <div class="btns">
+      <a class="btn primary" href="ko_widesearch.pdf">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        Paper (PDF)
+      </a>
+      <a class="btn" href="https://github.com/minstar/Ko-widesearch">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.5-.3-5.2-1.3-5.2-5.7 0-1.3.4-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+        Code &amp; Data
+      </a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- TL;DR -->
+<section id="tldr">
+  <div class="wrap">
+    <p class="eyebrow">The one-line takeaway</p>
+    <div class="tldr">
+      Web-agent benchmarks overwhelmingly measure <b>depth</b> — pinning one obscure answer behind a chain of
+      constraints. Ko-WideSearch measures <b>breadth</b>: list <i>every</i> member of a closed set and fill each
+      item's attributes. Across twelve agents the failure is consistent — <b>they recover the set but not the
+      rows</b> (best Item-F1 <b>92.8</b> vs best Row-F1 <b>53.7</b>), accuracy falls steadily as the table widens,
+      and <b>neither more search nor more spend closes the gap</b>.
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="stats">
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat"><div class="v">228</div><div class="l">gold tables</div></div>
+      <div class="stat"><div class="v">14,560</div><div class="l">attribute cells</div></div>
+      <div class="stat"><div class="v">12</div><div class="l">web agents evaluated</div></div>
+      <div class="stat"><div class="v">16</div><div class="l">categories · 190 entities</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- THE TASK -->
+<section id="benchmark">
+  <div class="wrap">
+    <p class="eyebrow">What the benchmark asks</p>
+    <h2>Enumerate the whole set, then fill every cell</h2>
+    <p class="lead muted">
+      Each task names a <b style="color:var(--ink)">set-parent entity</b> — a TV season, a dynasty, a league, an
+      administrative region, an election — and asks for its <b style="color:var(--ink)">full membership</b> plus a
+      <b style="color:var(--ink)">per-item attribute table</b>. Difficulty is set by two structural knobs dialed
+      independently: <b style="color:var(--ink)">table width</b> (number of attribute columns) and a
+      <b style="color:var(--ink)">2-D composite key</b> (membership becomes a cross-product, e.g. team × season).
+      From Easy to Hard, cross-product membership climbs from 0% to 100%.
+    </p>
+    <figure class="fig" style="margin-top:24px">
+      <img src="figures/motivation.png" alt="The benchmark and its running example: tasks span Korean categories and three difficulty tiers, from a simple list to a wide cross-product grid.">
+      <figcaption>
+        <b>The benchmark and its running example.</b> Reading left to right, tasks gain columns to fill and their
+        membership turns from a list into a grid. <b>Right:</b> the Government/Hard running example — every Korean
+        metropolitan province's elected head in the 7th and 8th local elections, 17×2 = 34 rows × 7 columns, with
+        each winner's age looked up off the results page (cross-source).
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- FINDINGS -->
+<section id="findings">
+  <div class="wrap">
+    <p class="eyebrow">What we found</p>
+    <h2>Five findings that hold across twelve agents</h2>
+    <div class="grid k3" style="margin-top:8px">
+      <div class="card">
+        <div class="num">92.8<span style="font-size:18px; color:var(--faint)"> → </span>53.7</div>
+        <h3>Sets, not rows</h3>
+        <p>Every model recovers membership far better than complete rows. Best Item-F1 is 92.8 while the best
+        Row-F1 is only 53.7 — the loss is at the cell level, not in finding who belongs.</p>
+      </div>
+      <div class="card">
+        <div class="num">↘</div>
+        <h3>Harder knobs, lower scores</h3>
+        <p>Row-F1 falls monotonically Easy → Medium → Hard (0.41 → 0.27 → 0.22). Adding columns and a 2-D
+        composite key reliably degrades accuracy.</p>
+      </div>
+      <div class="card">
+        <div class="num">≈</div>
+        <h3>More search ≠ better</h3>
+        <p>The two heaviest searchers (Qwen3.6 at 66.5 calls/task, Solar at 56.6) score lowest. GPT-5.5 and
+        Opus-4.8 reach the top with moderate search. Effort doesn't buy completeness.</p>
+      </div>
+      <div class="card">
+        <div class="num">10×</div>
+        <h3>Spend ≠ completeness</h3>
+        <p>Frontier costs ~10× the best open model for +9 Row-F1. DeepSeek-V4-Pro is the value winner — Row 45.0
+        at $0.23/task, 3rd overall, ahead of every proprietary model bar GPT-5.5 and Opus.</p>
+      </div>
+      <div class="card">
+        <div class="num">KR</div>
+        <h3>Korean specialists don't close it</h3>
+        <p>A.X-4.0 (24.2), Solar-Open-2 (24.4) and K-EXAONE-236B (17.5) all land at or below the open-weight
+        floor — far from frontier. Korean specialization alone is not the answer.</p>
+      </div>
+      <div class="card">
+        <div class="num">🔎</div>
+        <h3>Finding &gt; formatting</h3>
+        <p>Per cell-type: free-text (49) and enum (51) fail most; dates (58) and names (56) come out right. The
+        hard part is finding and normalizing the value, not formatting the table.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section id="results">
+  <div class="wrap">
+    <p class="eyebrow">Leaderboard</p>
+    <h2>The Item-vs-Row gap is universal</h2>
+    <figure class="fig" style="margin:18px 0 28px">
+      <img src="figures/results_gap.png" alt="Bar chart of Item-F1, Column-F1, Row-F1 and Table success for twelve web agents. For every model Item-F1 towers over Row-F1.">
+      <figcaption>
+        <b>Item-F1, Column-F1, Row-F1 and table success across twelve agents.</b> For every model the membership
+        bar (Item-F1) towers over the complete-row bar (Row-F1). Colors mark
+        <span style="color:var(--blue);font-weight:600">proprietary</span>,
+        <span style="color:var(--green);font-weight:600">open-weight</span>, and
+        <span style="color:var(--red);font-weight:600">Korean-specialized</span> systems.
+      </figcaption>
+    </figure>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Model</th><th>Item-F1</th><th>Col-F1</th><th>Row-F1</th><th>Tab.Succ</th><th>Parse</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="model">GPT-5.5 <span class="tag prop">PROP</span></td><td>92.8</td><td>74.3</td><td class="best">53.7</td><td class="best">19.3</td><td>98.2</td></tr>
+          <tr><td class="model">Claude-Opus-4.8 <span class="tag prop">PROP</span></td><td class="best">94.1</td><td class="best">75.5</td><td>52.9</td><td>16.2</td><td class="best">99.6</td></tr>
+          <tr><td class="model">DeepSeek-V4-Pro <span class="tag open">OPEN</span></td><td>80.4</td><td>63.9</td><td>45.0</td><td>12.3</td><td>87.3</td></tr>
+          <tr><td class="model">Gemini-3.1-Pro <span class="tag prop">PROP</span></td><td>78.9</td><td>53.9</td><td>35.5</td><td>10.1</td><td>86.0</td></tr>
+          <tr><td class="model">GLM-5.1 <span class="tag open">OPEN</span></td><td>61.7</td><td>45.6</td><td>34.0</td><td>12.3</td><td>66.2</td></tr>
+          <tr><td class="model">GPT-5.4-mini <span class="tag prop">PROP</span></td><td>82.3</td><td>55.9</td><td>33.3</td><td>5.7</td><td>98.2</td></tr>
+          <tr><td class="model">Solar-Open-2-preview <span class="tag kr">KR</span></td><td>44.0</td><td>33.3</td><td>24.4</td><td>9.7</td><td>62.7</td></tr>
+          <tr><td class="model">A.X-4.0 <span class="tag kr">KR</span></td><td>71.7</td><td>46.2</td><td>24.2</td><td>4.4</td><td>93.0</td></tr>
+          <tr><td class="model">Gemma-4-31B <span class="tag open">OPEN</span></td><td>76.4</td><td>43.9</td><td>23.0</td><td>2.6</td><td>93.0</td></tr>
+          <tr><td class="model">Gemini-3.1-Flash-Lite <span class="tag prop">PROP</span></td><td>29.8</td><td>25.3</td><td>19.7</td><td>4.8</td><td>33.0</td></tr>
+          <tr><td class="model">K-EXAONE-236B <span class="tag kr">KR</span></td><td>61.9</td><td>32.3</td><td>17.5</td><td>3.1</td><td>82.9</td></tr>
+          <tr><td class="model">Qwen3.6-35B <span class="tag open">OPEN</span></td><td>32.4</td><td>22.2</td><td>16.2</td><td>4.0</td><td>39.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:13.5px; margin-top:12px">
+      Full pool, n = 228, pass@1. <span class="best">Bold</span> = best per column. Parse = fraction of runs that
+      emit a scorable table (low parse rates reflect models that search heavily then return prose instead of a table).
+    </p>
+  </div>
+</section>
+
+<!-- ANALYSIS -->
+<section id="analysis">
+  <div class="wrap">
+    <p class="eyebrow">Why it's hard</p>
+    <h2>Knobs degrade accuracy; effort doesn't recover it</h2>
+    <div class="grid k2" style="margin-top:8px">
+      <figure class="fig">
+        <img src="figures/results_tiers.png" alt="Line plots showing every metric declining from Easy to Hard difficulty tiers and from exhaustive to cross-source sourcing.">
+        <figcaption><b>Accuracy by difficulty tier and by sourcing.</b> Every metric slopes down as the structural
+        knobs harden (Easy → Hard) and as attributes move off the membership page (exhaustive → cross-source).</figcaption>
+      </figure>
+      <figure class="fig">
+        <img src="figures/cost_budget.png" alt="Left: accuracy versus cost-per-task scatter. Right: share of tasks using 30 or more search calls per model.">
+        <figcaption><b>Accuracy vs. cost, and search saturation.</b> Frontier accuracy costs ~10× the best open
+        model; DeepSeek-V4-Pro is the Pareto value winner. The heaviest searchers (right) are <i>not</i> the top
+        scorers — more tool calls do not buy completeness.</figcaption>
+      </figure>
+    </div>
+    <p class="lead muted" style="margin-top:24px">
+      Membership is <b style="color:var(--ink)">balanced</b> — agents neither systematically hallucinate members nor
+      systematically drop them (Item precision ≈ recall). The benchmark separates two skills that depth benchmarks
+      conflate: <b style="color:var(--ink)">finding everyone</b> (largely solved) and
+      <b style="color:var(--ink)">getting every cell right</b> (far from solved).
+    </p>
+  </div>
+</section>
+
+<!-- DATA / RELEASE -->
+<section id="release">
+  <div class="wrap">
+    <p class="eyebrow">Construction &amp; release</p>
+    <h2>Built by synthesize-and-verify, released leakage-aware</h2>
+    <div class="grid k2">
+      <div>
+        <h3>One comparator, two jobs</h3>
+        <p class="muted">A single normalization-aware comparator is shared between gold construction and grading —
+        so stable date and count columns are not over-dropped on formatting alone (date-granularity,
+        thousands-comma/unit numbers, name variants). The 228 tables span 16 categories and 190 distinct
+        set-parent entities, screened against 5,744 questions from 8 benchmarks with <b>0 overlap</b>.</p>
+      </div>
+      <div>
+        <h3>Leakage-aware release</h3>
+        <p class="muted">The pipeline and scorer are released open (MIT). The gold tables are shared
+        <b>on request</b> rather than posted on the open web — a live-web agent can otherwise search up a publicly
+        posted gold table and copy the answer. This follows GAIA (private test behind a leaderboard) and
+        BrowseComp (canary string).</p>
+      </div>
+    </div>
+    <div class="note" style="margin-top:22px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+      <div>The gold evaluation data is gated by design. To run the evaluation or request the data, see the
+      instructions in the <a href="https://github.com/minstar/Ko-widesearch">repository</a>.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CITATION -->
+<section id="cite">
+  <div class="wrap">
+    <p class="eyebrow">Citation</p>
+    <h2>BibTeX</h2>
+    <div class="pre-head">
+      <span class="muted" style="font-size:14px">If you find Ko-WideSearch useful, please cite:</span>
+      <button class="copybtn" onclick="copyBib()">Copy</button>
+    </div>
+    <pre id="bib">@inproceedings{jeong2026kowidesearch,
+  title     = {Ko-WideSearch: A Korean Breadth-Search Benchmark
+               for Exhaustive Set Enumeration by Web Agents},
+  author    = {Jeong, Minbyul},
+  year      = {2026},
+  note      = {Upstage AI},
+  url       = {https://github.com/minstar/Ko-widesearch}
+}</pre>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Ko-WideSearch · Minbyul Jeong, Upstage AI · 2026</p>
+    <p style="margin-top:4px"><a href="ko_widesearch.pdf">Paper</a> · <a href="https://github.com/minstar/Ko-widesearch">Code &amp; Data</a></p>
+  </div>
+</footer>
+
+<script>
+function copyBib(){
+  const t = document.getElementById('bib').innerText;
+  navigator.clipboard.writeText(t).then(()=>{
+    const b = document.querySelector('.copybtn');
+    const o = b.innerText; b.innerText = 'Copied ✓';
+    setTimeout(()=>b.innerText=o, 1600);
+  });
+}
+</script>
+</body>
+</html>
