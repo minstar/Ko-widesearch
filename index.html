@@ -413,6 +413,31 @@
       Every city is recovered; the attribute cells are blank or wrong. One verbatim example of the six-way failure
       taxonomy documented in the paper's appendix (one real case per model).</figcaption>
     </figure>
+
+    <h2 style="margin-top:44px">Does strict scoring under-state the gap?</h2>
+    <p class="lead muted" style="margin-top:8px">
+      Our deterministic scorer is deliberately conservative, so we test it with a semantic second pass: for every
+      cell it marks wrong on a soft-typed column (name, location, free text), an LLM judge (GPT-5.4-mini) decides
+      whether the prediction still denotes the same answer — crediting transliteration variants and administrative
+      granularity (<i>Gangwon&nbsp;Chuncheon</i> ≡ <i>Chuncheon,&nbsp;Korea</i>), but not a different entity, value,
+      or fabricated specificity. What looks like GPT-5.5 <i>cell mis-fill</i> — the has-children enum written as a
+      free-text count (<i>있음</i> ≡ <i>자녀&nbsp;3명</i>), a residence coarsened (<i>서울,&nbsp;대한민국</i> ≡ <i>서울</i>)
+      — is mostly this kind of surface variant, not a wrong value.
+    </p>
+    <figure class="fig" style="margin-top:18px">
+      <img src="figures/judged_delta.png" alt="Dumbbell chart of strict to judged Row-F1 per model; the correction grows with model strength.">
+      <figcaption><b>Semantic judging helps strong models more.</b> The strict→judged Row-F1 correction grows with
+      model strength (DeepSeek-V4-Pro +4.9 vs +0.8 for the weakest), so strict matching <i>under</i>-states the gap
+      between strong and weak systems rather than inflating it.</figcaption>
+    </figure>
+    <p class="lead muted" style="margin-top:24px">
+      Re-scoring this way lifts Row-F1 by only 0.8–4.9 points, and it lifts the <b style="color:var(--ink)">stronger</b>
+      models more: among a model's judge-confirmed-wrong cells, the share the judge rescues rises with strength
+      (GPT-5.5 35% vs K-EXAONE 9%). A strong model's residual errors are surface variants; a weak model's are
+      substantive — a different entity, region, value, or category, as the residual taxonomy above shows. We keep
+      the deterministic scorer as the reproducible default and report the judged numbers as a measurement-validity
+      check, not a new ranking.
+    </p>
   </div>
 </section>
 
