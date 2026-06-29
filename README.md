@@ -3,7 +3,7 @@
 A Korean breadth-search benchmark for exhaustive set enumeration by web agents.
 
 🔗 **Project page:** https://minstar.github.io/Ko-widesearch/
-📄 **Paper:** coming soon
+📄 **Paper:** https://arxiv.org/abs/2606.27595
 
 ## TL;DR
 
